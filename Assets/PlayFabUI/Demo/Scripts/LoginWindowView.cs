@@ -211,7 +211,7 @@ public class LoginWindowView : Photon.PunBehaviour
 
             RoomOptions options = new RoomOptions
             {
-                MaxPlayers = 4
+                MaxPlayers = 2
             };
             PhotonNetwork.JoinOrCreateRoom("Fighting Room", options, TypedLobby.Default);
         }
