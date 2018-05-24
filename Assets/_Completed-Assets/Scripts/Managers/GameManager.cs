@@ -73,7 +73,7 @@ namespace Complete
                          m_Tanks[i].m_SpawnPoint.position,
                          m_Tanks[i].m_SpawnPoint.rotation,
                          0) as GameObject;
-
+            tank.name = "LocalTank";
             m_Tanks[i].m_Instance = tank;
             m_Tanks[i].m_PlayerNumber = i + 1;
             m_Tanks[i].Setup();
@@ -111,7 +111,7 @@ namespace Complete
 
         private void Update()
         {
-            if (currentPlayerCount != PhotonNetwork.room.PlayerCount)
+            if (PhotonNetwork.inRoom && currentPlayerCount != PhotonNetwork.room.PlayerCount)
             {
                 var tanks = GameObject.FindGameObjectsWithTag("Player");
                 currentPlayerCount = tanks.Length;

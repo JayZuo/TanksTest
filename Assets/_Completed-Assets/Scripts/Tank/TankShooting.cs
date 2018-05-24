@@ -85,18 +85,15 @@ namespace Complete
 
         private void Fire()
         {
-            if (photonView.isMine)
-            {
-                photonView.RPC("FireRPC", PhotonTargets.AllViaServer, m_CurrentLaunchForce);
-            }
+            // Set the fired flag so only Fire is only called once.
+            m_Fired = true;
+
+            photonView.RPC("FireRPC", PhotonTargets.AllViaServer, m_CurrentLaunchForce);
         }
 
         [PunRPC]
         private void FireRPC(float CurrentLaunchForce)
         {
-            // Set the fired flag so only Fire is only called once.
-            m_Fired = true;
-
             // Create an instance of the shell and store a reference to it's rigidbody.
             Rigidbody shellInstance =
                 Instantiate(m_Shell, m_FireTransform.position, m_FireTransform.rotation) as Rigidbody;

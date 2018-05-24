@@ -146,6 +146,8 @@ public class LoginWindowView : Photon.PunBehaviour
         //We can player PlayFabId. This will come in handy during next step
         _playFabPlayerIdCache = result.PlayFabId;
 
+        PhotonNetwork.playerName = Username.text;
+
         PlayFabClientAPI.GetPhotonAuthenticationToken(new GetPhotonAuthenticationTokenRequest()
         {
             PhotonApplicationId = PhotonNetwork.PhotonServerSettings.AppID
