@@ -12,8 +12,8 @@ namespace Complete
         public AudioClip m_EngineDriving;           // Audio to play when the tank is moving.
         public float m_PitchRange = 0.2f;           // The amount by which the pitch of the engine noises can vary.
 
-        private string m_MovementAxisName;          // The name of the input axis for moving forward and back.
-        private string m_TurnAxisName;              // The name of the input axis for turning.
+        //private string m_MovementAxisName;          // The name of the input axis for moving forward and back.
+        //private string m_TurnAxisName;              // The name of the input axis for turning.
         private Rigidbody m_Rigidbody;              // Reference used to move the tank.
         private float m_MovementInputValue;         // The current value of the movement input.
         private float m_TurnInputValue;             // The current value of the turn input.
@@ -58,36 +58,12 @@ namespace Complete
             }
         }
 
-        /// <summary>Called by PUN on all components of network-instantiated GameObjects.</summary>
-        /// <param name="info">Details about this instantiation.</param>
-        public override void OnPhotonInstantiate(PhotonMessageInfo info)
-        {
-            object color;
-            if (photonView.owner.CustomProperties.TryGetValue("TankColor", out color))
-            {
-                if (color != null)
-                {
-                    var colorArray = (float[])color;
-
-                    // Get all of the renderers of the tank.
-                    MeshRenderer[] renderers = gameObject.GetComponentsInChildren<MeshRenderer>();
-
-                    // Go through all the renderers...
-                    for (int i = 0; i < renderers.Length; i++)
-                    {
-                        // ... set their material color to the color specific to this tank.
-                        renderers[i].material.color = new Color(colorArray[0], colorArray[1], colorArray[2], colorArray[3]);
-                    }
-                }
-            }
-
-        }
 
         private void Start()
         {
             // The axes names are based on player number.
-            m_MovementAxisName = "Vertical" + m_PlayerNumber;
-            m_TurnAxisName = "Horizontal" + m_PlayerNumber;
+            //m_MovementAxisName = "Vertical" + m_PlayerNumber;
+            //m_TurnAxisName = "Horizontal" + m_PlayerNumber;
 
             // Store the original pitch of the audio source.
             m_OriginalPitch = m_MovementAudio.pitch;

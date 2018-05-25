@@ -1,4 +1,6 @@
+using ExitGames.UtilityScripts;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -8,14 +10,19 @@ namespace Complete
 {
     public class GameManager : Photon.PunBehaviour
     {
+        public static GameManager Instance;
+
+        //this is static so tank can be added even withotu the scene loaded (i.e. from lobby)
+        public static List<TankManager> m_Tanks = new List<TankManager>();             // A collection of managers for enabling and disabling different aspects of the tanks.
+
         public int m_NumRoundsToWin = 5;            // The number of rounds a single player has to win to win the game.
         public float m_StartDelay = 3f;             // The delay between the start of RoundStarting and RoundPlaying phases.
         public float m_EndDelay = 3f;               // The delay between the end of RoundPlaying and RoundEnding phases.
         public CameraControl m_CameraControl;       // Reference to the CameraControl script for control during different phases.
         public Text m_MessageText;                  // Reference to the overlay Text to display winning text, etc.
         public GameObject m_TankPrefab;             // Reference to the prefab the players will control.
-        public TankManager[] m_Tanks;               // A collection of managers for enabling and disabling different aspects of the tanks.
 
+        public Transform[] m_SpawnPoint;
 
         private int m_RoundNumber;                  // Which round the game is currently on.
         private WaitForSeconds m_StartWait;         // Used to have a delay whilst the round starts.
@@ -23,6 +30,10 @@ namespace Complete
         private TankManager m_RoundWinner;          // Reference to the winner of the current round.  Used to make an announcement of who won.
         private TankManager m_GameWinner;           // Reference to the winner of the game.  Used to make an announcement of who won.
 
+        void Awake()
+        {
+            Instance = this;
+        }
 
         private void Start()
         {
@@ -30,76 +41,58 @@ namespace Complete
             m_StartWait = new WaitForSeconds(m_StartDelay);
             m_EndWait = new WaitForSeconds(m_EndDelay);
 
-            //SpawnAllTanks();
-
-            if (!PhotonNetwork.inRoom)
-                return;
             SpawnTank();
 
-            //SetCameraTargets();
-
-            //StartCoroutine(GameLoop());
+            StartCoroutine(GameLoop());
         }
-
-        //private void SpawnAllTanks()
-        //{
-        //    // For all the tanks...
-        //    for (int i = 0; i < m_Tanks.Length; i++)
-        //    {
-        //        // ... create them, set their player number and references needed for control.
-        //        m_Tanks[i].m_Instance =
-        //            Instantiate(m_TankPrefab, m_Tanks[i].m_SpawnPoint.position, m_Tanks[i].m_SpawnPoint.rotation) as GameObject;
-        //        m_Tanks[i].m_PlayerNumber = i + 1;
-        //        m_Tanks[i].Setup();
-        //    }
-        //}
 
         // create one Tank, set its player number and references needed for control.
-
         private void SpawnTank()
         {
-            int i = PhotonNetwork.room.PlayerCount - 1;
+            int i = PhotonNetwork.player.GetRoomIndex();
 
-            var color = m_Tanks[i].m_PlayerColor;
+            //var color = m_Tanks[i].m_PlayerColor;
 
-            Hashtable playerColor = new Hashtable();
+            //Hashtable playerColor = new Hashtable();
 
-            playerColor["TankColor"] = new float[] { color.r, color.g, color.b, color.a };
+            //playerColor["TankColor"] = new float[] { color.r, color.g, color.b, color.a };
 
-            PhotonNetwork.player.SetCustomProperties(playerColor);
+            //PhotonNetwork.player.SetCustomProperties(playerColor);
 
-            GameObject tank = PhotonNetwork.Instantiate(
-                         "CompleteTank",
-                         m_Tanks[i].m_SpawnPoint.position,
-                         m_Tanks[i].m_SpawnPoint.rotation,
-                         0) as GameObject;
+            GameObject tank = PhotonNetwork.Instantiate("CompleteTank", m_SpawnPoint[i].position, m_SpawnPoint[i].rotation, 0);
             tank.name = "LocalTank";
-            m_Tanks[i].m_Instance = tank;
-            m_Tanks[i].m_PlayerNumber = i + 1;
-            m_Tanks[i].Setup();
 
-            Debug.Log("SpawnTank" + PhotonNetwork.room.PlayerCount);
+            //Debug.Log("SpawnTank" + PhotonNetwork.room.PlayerCount);
         }
 
-        public override void OnPhotonInstantiate(PhotonMessageInfo info)
+        public static void AddTank(GameObject tank, int playerNum, Color c, string name)
         {
-            Debug.Log(info.ToString());
-        }
-
-        private void SetCameraTargets()
-        {
-            // Create a collection of transforms the same size as the number of tanks.
-            Transform[] targets = new Transform[m_Tanks.Length];
-
-            // For each of these transforms...
-            for (int i = 0; i < targets.Length; i++)
+            TankManager tmp = new TankManager
             {
-                // ... set it to the appropriate tank transform.
-                targets[i] = m_Tanks[i].m_Instance.transform;
+                m_Instance = tank,
+                m_PlayerNumber = playerNum,
+                m_PlayerColor = c,
+                m_PlayerName = name
+            };
+            tmp.Setup();
+
+            m_Tanks.Add(tmp);
+        }
+
+        public void RemoveTank(GameObject tank)
+        {
+            TankManager toRemove = null;
+            foreach (var tmp in m_Tanks)
+            {
+                if (tmp.m_Instance == tank)
+                {
+                    toRemove = tmp;
+                    break;
+                }
             }
 
-            // These are the targets the camera should follow.
-            m_CameraControl.m_Targets = targets;
+            if (toRemove != null)
+                m_Tanks.Remove(toRemove);
         }
 
         public override void OnPhotonPlayerConnected(PhotonPlayer other)
@@ -107,37 +100,16 @@ namespace Complete
             Debug.Log("OnPhotonPlayerConnected() " + other.NickName); // not seen if you're the player connecting
         }
 
-        private int currentPlayerCount = 1;
 
-        private void Update()
-        {
-            if (PhotonNetwork.inRoom && currentPlayerCount != PhotonNetwork.room.PlayerCount)
-            {
-                var tanks = GameObject.FindGameObjectsWithTag("Player");
-                currentPlayerCount = tanks.Length;
-                if (currentPlayerCount == PhotonNetwork.room.PlayerCount)
-                {
-                    // Create a collection of transforms the same size as the number of tanks.
-                    Transform[] targets = new Transform[m_Tanks.Length];
-
-                    // For each of these transforms...
-                    for (int i = 0; i < targets.Length; i++)
-                    {
-                        // ... set it to the appropriate tank transform.
-                        targets[i] = tanks[i].transform;
-                    }
-
-                    // These are the targets the camera should follow.
-                    m_CameraControl.m_Targets = targets;
-                }
-
-            }
-        }
-
-
-        // This is called from start and will run each phase of the game one after another.
+        //This is called from start and will run each phase of the game one after another.
         private IEnumerator GameLoop()
         {
+            while (m_Tanks.Count < 2 || m_Tanks.Count != PhotonNetwork.room.PlayerCount)
+                yield return null;
+
+            ////wait to be sure that all are ready to start
+            //yield return new WaitForSeconds(2.0f);
+
             // Start off by running the 'RoundStarting' coroutine but don't return until it's finished.
             yield return StartCoroutine(RoundStarting());
 
@@ -167,8 +139,6 @@ namespace Complete
             // As soon as the round starts reset the tanks and make sure they can't move.
             ResetAllTanks();
             DisableTankControl();
-
-
 
             // Snap the camera's zoom and position to something appropriate for the reset tanks.
             m_CameraControl.SetStartPositionAndSize();
@@ -233,7 +203,7 @@ namespace Complete
             int numTanksLeft = 0;
 
             // Go through all the tanks...
-            for (int i = 0; i < m_Tanks.Length; i++)
+            for (int i = 0; i < m_Tanks.Count; i++)
             {
                 // ... and if they are active, increment the counter.
                 if (m_Tanks[i].m_Instance.activeSelf)
@@ -241,7 +211,7 @@ namespace Complete
             }
 
             // If there are one or fewer tanks remaining return true, otherwise return false.
-            return false;
+            return numTanksLeft <= 1;
         }
 
 
@@ -250,7 +220,7 @@ namespace Complete
         private TankManager GetRoundWinner()
         {
             // Go through all the tanks...
-            for (int i = 0; i < m_Tanks.Length; i++)
+            for (int i = 0; i < m_Tanks.Count; i++)
             {
                 // ... and if one of them is active, it is the winner so return it.
                 if (m_Tanks[i].m_Instance.activeSelf)
@@ -266,7 +236,7 @@ namespace Complete
         private TankManager GetGameWinner()
         {
             // Go through all the tanks...
-            for (int i = 0; i < m_Tanks.Length; i++)
+            for (int i = 0; i < m_Tanks.Count; i++)
             {
                 // ... and if one of them has enough rounds to win the game, return it.
                 if (m_Tanks[i].m_Wins == m_NumRoundsToWin)
@@ -292,7 +262,7 @@ namespace Complete
             message += "\n\n\n\n";
 
             // Go through all the tanks and add each of their scores to the message.
-            for (int i = 0; i < m_Tanks.Length; i++)
+            for (int i = 0; i < m_Tanks.Count; i++)
             {
                 message += m_Tanks[i].m_ColoredPlayerText + ": " + m_Tanks[i].m_Wins + " WINS\n";
             }
@@ -308,28 +278,29 @@ namespace Complete
         // This function is used to turn all the tanks back on and reset their positions and properties.
         private void ResetAllTanks()
         {
-            //for (int i = 0; i < m_Tanks.Length; i++)
-            //{
-            m_Tanks[PhotonNetwork.room.PlayerCount - 1].Reset();
-            //}
+            for (int i = 0; i < m_Tanks.Count; i++)
+            {
+                m_Tanks[i].m_SpawnPoint = m_SpawnPoint[m_Tanks[i].m_PlayerNumber];
+                m_Tanks[i].Reset();
+            }
         }
 
 
         private void EnableTankControl()
         {
-            //for (int i = 0; i < m_Tanks.Length; i++)
-            //{
-            m_Tanks[PhotonNetwork.room.PlayerCount - 1].EnableControl();
-            //}
+            for (int i = 0; i < m_Tanks.Count; i++)
+            {
+                m_Tanks[i].EnableControl();
+            }
         }
 
 
         private void DisableTankControl()
         {
-            //for (int i = 0; i < m_Tanks.Length; i++)
-            //{
-            m_Tanks[PhotonNetwork.room.PlayerCount - 1].DisableControl();
-            //}
+            for (int i = 0; i < m_Tanks.Count; i++)
+            {
+                m_Tanks[i].DisableControl();
+            }
         }
     }
 }

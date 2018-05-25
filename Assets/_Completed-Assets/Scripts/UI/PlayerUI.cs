@@ -31,7 +31,10 @@ public class PlayerUI : MonoBehaviour
     void OnDisable()
     {
         print("UI DISABLE");
-        UI.SetActive(false);
+        if (UI != null)
+        {
+            UI.SetActive(false);
+        }
     }
 
     void OnEnable()
