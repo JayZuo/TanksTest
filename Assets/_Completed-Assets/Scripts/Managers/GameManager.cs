@@ -37,6 +37,7 @@ namespace Complete
 
         private void Start()
         {
+           
             // Create the delays so they only have to be made once.
             m_StartWait = new WaitForSeconds(m_StartDelay);
             m_EndWait = new WaitForSeconds(m_EndDelay);
@@ -50,7 +51,7 @@ namespace Complete
         private void SpawnTank()
         {
             int i = PhotonNetwork.player.GetRoomIndex();
-
+          
             //var color = m_Tanks[i].m_PlayerColor;
 
             //Hashtable playerColor = new Hashtable();
@@ -123,7 +124,7 @@ namespace Complete
             if (m_GameWinner != null)
             {
                 // If there is a game winner, restart the level.
-                SceneManager.LoadScene(0);
+                SceneManager.LoadScene(1);
             }
             else
             {

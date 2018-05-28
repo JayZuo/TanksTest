@@ -5,8 +5,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using PlayFab;
 using PlayFab.ClientModels;
+using UnityEngine.SceneManagement;
 
-#if FACEBOOK 
+#if FACEBOOK
 using Facebook.Unity;
 #endif
 
@@ -170,120 +171,28 @@ public class LoginWindowView : Photon.PunBehaviour
         //We finally tell Photon to use this authentication parameters throughout the entire application.
         PhotonNetwork.AuthValues = customAuth;
 
-        Connect();
+        SceneManager.LoadScene("LobbyScene");
     }
 
-    private void Connect()
-    {
-        // keep track of the will to join a room, because when we come back from the game we will get a callback that we are connected, so we need to know what to do then
-        isConnecting = true;
+    //private void Connect()
+    //{
+    //    // keep track of the will to join a room, because when we come back from the game we will get a callback that we are connected, so we need to know what to do then
+    //    isConnecting = true;
 
-        if (PhotonNetwork.connected)
-        {
-            Debug.Log("Joining Room...");
-            // #Critical we need at this point to attempt joining a Random Room. If it fails, we'll get notified in OnPhotonRandomJoinFailed() and we'll create one.
-            PhotonNetwork.JoinRandomRoom();
-        }
-        else
-        {
-            Debug.Log("Connecting...");
-            // #Critical, we must first and foremost connect to Photon Online Server.
-            PhotonNetwork.ConnectUsingSettings(_gameVersion);
-        }
-    }
-    #region Photon.PunBehaviour CallBacks
-
-    /// <summary>
-    /// Called after the connection to the master is established and authenticated but only when PhotonNetwork.autoJoinLobby is false.
-    /// </summary>
-    public override void OnConnectedToMaster()
-    {
-
-        Debug.Log("Region:" + PhotonNetwork.networkingPeer.CloudRegion);
-
-        // we don't want to do anything if we are not attempting to join a room. 
-        // this case where isConnecting is false is typically when you lost or quit the game, when this level is loaded, OnConnectedToMaster will be called, in that case
-        // we don't want to do anything.
-        if (isConnecting)
-        {
-            Debug.Log("DemoAnimator/Launcher: OnConnectedToMaster() was called by PUN. Now this client is connected and could join a room.\n Calling: PhotonNetwork.JoinRandomRoom(); Operation will fail if no room found");
-
-            // #Critical: The first we try to do is to join a potential existing room. If there is, good, else, we'll be called back with OnPhotonRandomJoinFailed()
-            //PhotonNetwork.JoinRandomRoom();
-
-            RoomOptions options = new RoomOptions
-            {
-                MaxPlayers = 2
-            };
-            PhotonNetwork.JoinOrCreateRoom("Fighting Room", options, TypedLobby.Default);
-        }
-    }
-
-    public override void OnPhotonJoinRoomFailed(object[] codeAndMsg)
-    {
-        base.OnPhotonJoinRoomFailed(codeAndMsg);
-    }
-
-    public override void OnPhotonCreateRoomFailed(object[] codeAndMsg)
-    {
-        base.OnPhotonCreateRoomFailed(codeAndMsg);
-    }
-
-    public override void OnCreatedRoom()
-    {
-        base.OnCreatedRoom();
-    }
-
-    /// <summary>
-    /// Called when entering a room (by creating or joining it). Called on all clients (including the Master Client).
-    /// </summary>
-    /// <remarks>
-    /// This method is commonly used to instantiate player characters.
-    /// If a match has to be started "actively", you can call an [PunRPC](@ref PhotonView.RPC) triggered by a user's button-press or a timer.
-    ///
-    /// When this is called, you can usually already access the existing players in the room via PhotonNetwork.playerList.
-    /// Also, all custom properties should be already available as Room.customProperties. Check Room..PlayerCount to find out if
-    /// enough players are in the room to start playing.
-    /// </remarks>
-    public override void OnJoinedRoom()
-    {
-        Debug.Log("<Color=Green>OnJoinedRoom</Color> with " + PhotonNetwork.room.PlayerCount + " Player(s)");
-        Debug.Log("DemoAnimator/Launcher: OnJoinedRoom() called by PUN. Now this client is in a room.\nFrom here on, your game would be running. For reference, all callbacks are listed in enum: PhotonNetworkingMessage");
-
-        //// #Critical: We only load if we are the first player, else we rely on  PhotonNetwork.automaticallySyncScene to sync our instance scene.
-        //if (PhotonNetwork.room.PlayerCount == 1)
-        //{
-        //    Debug.Log("We load the 'Room for 1' ");
-        //    // #Critical
-        //    // Load the Room Level. 
-        //    PhotonNetwork.LoadLevel("PunBasics-Room for 1");
-        //}
-
-        if (PhotonNetwork.isMasterClient)
-        {
-            PhotonNetwork.LoadLevel("_Complete-Game");
-        }
-    }
-
-    /// <summary>
-    /// Called after disconnecting from the Photon server.
-    /// </summary>
-    /// <remarks>
-    /// In some cases, other callbacks are called before OnDisconnectedFromPhoton is called.
-    /// Examples: OnConnectionFail() and OnFailedToConnectToPhoton().
-    /// </remarks>
-    public override void OnDisconnectedFromPhoton()
-    {
-        Debug.LogError("DemoAnimator/Launcher:Disconnected");
-
-        // #Critical: we failed to connect or got disconnected. There is not much we can do. Typically, a UI system should be in place to let the user attemp to connect again.
-
-        isConnecting = false;
-        //controlPanel.SetActive(true);
-
-    }
-    #endregion
-
+    //    if (PhotonNetwork.connected)
+    //    {
+    //        Debug.Log("Joining Room...");
+    //        // #Critical we need at this point to attempt joining a Random Room. If it fails, we'll get notified in OnPhotonRandomJoinFailed() and we'll create one.
+    //        PhotonNetwork.JoinRandomRoom();
+    //    }
+    //    else
+    //    {
+    //        Debug.Log("Connecting...");
+    //        // #Critical, we must first and foremost connect to Photon Online Server.
+    //        PhotonNetwork.ConnectUsingSettings(_gameVersion);
+    //    }
+    //}
+    
     /// <summary>
     /// Error handling for when Login returns errors.
     /// </summary>

@@ -91,6 +91,7 @@ namespace ExitGames.UtilityScripts
 			{
 				SanitizeIndexing(true);
 			}
+            DontDestroyOnLoad(gameObject);
 		}
 
 		#endregion
