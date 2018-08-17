@@ -39,7 +39,7 @@ public class LobbyScene : MonoBehaviour
 
     public void Awake()
     {
-   
+
         RoomsListPanel = transform.Find("MainPanel/RoomsListPanel");
         RoomInfoPanel = transform.Find("MainPanel/RoomInfoPanel");
         roomsIndicator = transform.Find("MainPanel/RoomsListPanel/RoomsIndicator").GetComponent<Text>();
@@ -60,27 +60,24 @@ public class LobbyScene : MonoBehaviour
             RoomInfoPanel.gameObject.SetActive(false);
 
         }
-        else
-        {
-            RoomInfoPanel.Find("StartButton").gameObject.SetActive(PhotonNetwork.isMasterClient);
-        }
-       
+
+        //RoomInfoPanel.Find("StartButton").gameObject.SetActive(false);
+
 
     }
 
     private void Update()
     {
-       
         if (PhotonNetwork.inRoom)
         {
-           
+
             string a = "";
             a += "There is/are " + PhotonNetwork.room.PlayerCount + " Player(s) in the room.";
             a += "\n";
             foreach (var item in PhotonNetwork.playerList)
             {
                 a += "\n";
-              
+
                 a += item.NickName;
 
                 if (item.IsMasterClient)
@@ -95,7 +92,9 @@ public class LobbyScene : MonoBehaviour
                 a += "\n";
             }
             RoomInfoPanel.Find("RoomInfo").GetComponent<Text>().text = a;
-          
+
+            RoomInfoPanel.Find("StartButton").gameObject.SetActive(PhotonNetwork.playerList.Length > 1 && PhotonNetwork.isMasterClient);
+
         }
         else
         {
@@ -146,10 +145,12 @@ public class LobbyScene : MonoBehaviour
 
     }
 
-    public void OnClickRoomCreatedButton() {
+    public void OnClickRoomCreatedButton()
+    {
         PhotonNetwork.CreateRoom(RoomNameInputField.text, new RoomOptions() { MaxPlayers = 4 }, null);
     }
-    public void OnClickBackButton() {
+    public void OnClickBackButton()
+    {
         PhotonNetwork.LeaveRoom();
     }
     public void OnClickStartButton()
@@ -163,17 +164,17 @@ public class LobbyScene : MonoBehaviour
     // We have two options here: we either joined(by title, list or random) or created a room.
     public void OnMasterClientSwitched(PhotonPlayer newMasterClient)
     {
-        RoomInfoPanel.Find("StartButton").gameObject.SetActive(PhotonNetwork.isMasterClient);
+        //RoomInfoPanel.Find("StartButton").gameObject.SetActive(PhotonNetwork.isMasterClient);
     }
     public void OnJoinedRoom()
     {
         RoomsListPanel.gameObject.SetActive(false);
         RoomInfoPanel.gameObject.SetActive(true);
-      
-        RoomInfoPanel.Find("StartButton").gameObject.SetActive(PhotonNetwork.isMasterClient);
 
-        
-      
+        //RoomInfoPanel.Find("StartButton").gameObject.SetActive(PhotonNetwork.isMasterClient);
+
+
+
         Debug.Log("OnJoinedRoom");
     }
     public void OnLeftRoom()
@@ -202,7 +203,7 @@ public class LobbyScene : MonoBehaviour
     public void OnCreatedRoom()
     {
         Debug.Log("OnCreatedRoom");
-       // PhotonNetwork.LoadLevel(SceneNameGame);
+        // PhotonNetwork.LoadLevel(SceneNameGame);
     }
 
     public void OnDisconnectedFromPhoton()
