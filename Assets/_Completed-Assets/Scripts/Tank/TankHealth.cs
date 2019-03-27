@@ -1,9 +1,10 @@
-﻿using UnityEngine;
+﻿using Photon.Pun;
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace Complete
 {
-    public class TankHealth : Photon.PunBehaviour
+    public class TankHealth : MonoBehaviourPunCallbacks
     {
         public float m_StartingHealth = 100f;               // The amount of health each tank starts with.
         public Slider m_Slider;                             // The slider to represent how much health the tank currently has.
@@ -31,9 +32,9 @@ namespace Complete
             m_ExplosionParticles.gameObject.SetActive(false);
         }
 
-
-        private void OnEnable()
+        public override void OnEnable()
         {
+            base.OnEnable();
             // When the tank is enabled, reset the tank's health and whether or not it's dead.
             m_CurrentHealth = m_StartingHealth;
             m_Dead = false;
@@ -62,7 +63,7 @@ namespace Complete
 
         public void TakeDamage(float amount)
         {
-            photonView.RPC("TakeDamageRPC", PhotonTargets.All, amount);
+            photonView.RPC("TakeDamageRPC", RpcTarget.All, amount);
         }
 
 

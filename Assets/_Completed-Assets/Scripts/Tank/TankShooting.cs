@@ -1,9 +1,10 @@
-﻿using UnityEngine;
+﻿using Photon.Pun;
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace Complete
 {
-    public class TankShooting : Photon.PunBehaviour
+    public class TankShooting : MonoBehaviourPunCallbacks
     {
         public int m_PlayerNumber = 1;              // Used to identify the different players.
         public Rigidbody m_Shell;                   // Prefab of the shell.
@@ -23,8 +24,10 @@ namespace Complete
         private bool m_Fired;                       // Whether or not the shell has been launched with this button press.
 
 
-        private void OnEnable()
+        public override void OnEnable()
         {
+            base.OnEnable();
+
             // When the tank is turned on, reset the launch force and the UI
             m_CurrentLaunchForce = m_MinLaunchForce;
             m_AimSlider.value = m_MinLaunchForce;
@@ -43,7 +46,7 @@ namespace Complete
 
         private void Update()
         {
-            if (photonView.isMine)
+            if (photonView.IsMine)
             {
                 // The slider should have a default value of the minimum launch force.
                 m_AimSlider.value = m_MinLaunchForce;
@@ -88,7 +91,7 @@ namespace Complete
             // Set the fired flag so only Fire is only called once.
             m_Fired = true;
 
-            photonView.RPC("FireRPC", PhotonTargets.AllViaServer, m_CurrentLaunchForce);
+            photonView.RPC("FireRPC", RpcTarget.AllViaServer, m_CurrentLaunchForce);
         }
 
         [PunRPC]

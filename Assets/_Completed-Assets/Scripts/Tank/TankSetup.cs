@@ -1,16 +1,17 @@
-﻿using ExitGames.UtilityScripts;
-using Photon;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
+using Photon;
+using Photon.Pun;
+using Photon.Pun.UtilityScripts;
 using UnityEngine;
 
-public class TankSetup : PunBehaviour
+public class TankSetup : MonoBehaviourPunCallbacks
 {
     public static Color[] Colors = new Color[] { Color.red, Color.blue, Color.yellow, Color.green };
 
     /// <summary>Called by PUN on all components of network-instantiated GameObjects.</summary>
     /// <param name="info">Details about this instantiation.</param>
-    public override void OnPhotonInstantiate(PhotonMessageInfo info)
+    public void OnPhotonInstantiate(PhotonMessageInfo info)
     {
         //object color;
         //if (photonView.owner.CustomProperties.TryGetValue("TankColor", out color))
@@ -31,8 +32,8 @@ public class TankSetup : PunBehaviour
         //    }
         //}
 
-        int index = info.sender.GetRoomIndex();
+        int index = info.Sender.GetPlayerNumber();
 
-        Complete.GameManager.AddTank(gameObject, index, Colors[index], info.sender.NickName);
+        Complete.GameManager.AddTank(gameObject, index, Colors[index], info.Sender.NickName);
     }
 }

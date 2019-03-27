@@ -1,11 +1,13 @@
-﻿using ExitGames.UtilityScripts;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using Photon.Pun;
+using Photon.Realtime;
 using UnityEngine;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
-public class LobbyScene : MonoBehaviour
+
+public class LobbyScene : MonoBehaviourPunCallbacks
 {
 
     public InputField RoomNameInputField;
@@ -15,7 +17,10 @@ public class LobbyScene : MonoBehaviour
 
     public string ErrorDialog
     {
-        get { return this.errorDialog; }
+        get
+        {
+            return this.errorDialog;
+        }
         private set
         {
             this.errorDialog = value;
@@ -31,8 +36,6 @@ public class LobbyScene : MonoBehaviour
     private Transform RoomsListPanel;
     private Transform RoomInfoPanel;
 
-    private bool connectFailed = false;
-
     private string errorDialog;
     private Text roomsIndicator;
     private Transform RoomsList;
@@ -45,17 +48,15 @@ public class LobbyScene : MonoBehaviour
         roomsIndicator = transform.Find("MainPanel/RoomsListPanel/RoomsIndicator").GetComponent<Text>();
         RoomsList = transform.Find("MainPanel/RoomsListPanel/RoomsList");
         // this makes sure we can use PhotonNetwork.LoadLevel() on the master client and all clients in the same room sync their level automatically
-        PhotonNetwork.automaticallySyncScene = true;
+        PhotonNetwork.AutomaticallySyncScene = true;
 
         // the following line checks if this client was just created (and not yet online). if so, we connect
-        if (PhotonNetwork.connectionStateDetailed == ClientState.PeerCreated)
+        if (PhotonNetwork.NetworkClientState == ClientState.PeerCreated)
         {
             // Connect to the photon master-server. We use the settings saved in PhotonServerSettings (a .asset file in this project)
-            PhotonNetwork.ConnectUsingSettings("0.9");
-
-
+            PhotonNetwork.ConnectUsingSettings();
         }
-        if (!PhotonNetwork.inRoom)
+        if (!PhotonNetwork.InRoom)
         {
             RoomInfoPanel.gameObject.SetActive(false);
 
@@ -66,15 +67,75 @@ public class LobbyScene : MonoBehaviour
 
     }
 
+    public override void OnRoomListUpdate(List<RoomInfo> roomList)
+    {
+        int roomcount = roomList.Count;
+        foreach (RoomInfo info in roomList)
+        {
+            // Remove room from cached room list if it got closed, became invisible or was marked as removed
+            if (!info.IsOpen || !info.IsVisible || info.RemovedFromList)
+            {
+                roomcount--;
+            }
+        }
+
+        RoomsListPanel.gameObject.SetActive(true);
+        RoomInfoPanel.gameObject.SetActive(false);
+        if (roomcount == 0)
+        {
+            roomsIndicator.text = "Currently no games are available.";
+
+            for (int i = 0; i < RoomsList.childCount; i++)
+            {
+                RoomsList.GetChild(i).gameObject.SetActive(false);
+                RoomsList.GetChild(i).SetParent(RoomCellPool);
+
+            }
+        }
+        else
+        {
+            roomsIndicator.text = roomcount + " rooms available:";
+
+            while (roomcount > RoomsList.childCount)
+            {
+                RoomCellPool.GetChild(0).gameObject.SetActive(true);
+                RoomCellPool.GetChild(0).SetParent(RoomsList);
+            }
+            while (roomcount < RoomsList.childCount)
+            {
+                RoomsList.GetChild(0).gameObject.SetActive(false);
+                RoomsList.GetChild(0).SetParent(RoomCellPool);
+            }
+
+            int i = 0;
+
+            foreach (RoomInfo roomInfo in roomList)
+            {
+                // Remove room from cached room list if it got closed, became invisible or was marked as removed
+                if (!roomInfo.IsOpen || !roomInfo.IsVisible || roomInfo.RemovedFromList)
+                {
+                    continue;
+                }
+
+                RoomsList.GetChild(i).GetComponent<RoomCellInfo>().RoomName.text = roomInfo.Name + " " + roomInfo.PlayerCount + "/" + roomInfo.MaxPlayers;
+
+                RoomsList.GetChild(i).GetComponent<RoomCellInfo>().JoinButton.onClick.RemoveAllListeners();
+                RoomsList.GetChild(i).GetComponent<RoomCellInfo>().JoinButton.onClick.AddListener(() => PhotonNetwork.JoinRoom(roomInfo.Name));
+
+                i++;
+            }
+        }
+    }
+
     private void Update()
     {
-        if (PhotonNetwork.inRoom)
+        if (PhotonNetwork.InRoom)
         {
 
             string a = "";
-            a += "There is/are " + PhotonNetwork.room.PlayerCount + " Player(s) in the room.";
+            a += "There is/are " + PhotonNetwork.CurrentRoom.PlayerCount + " Player(s) in the room.";
             a += "\n";
-            foreach (var item in PhotonNetwork.playerList)
+            foreach (var item in PhotonNetwork.PlayerList)
             {
                 a += "\n";
 
@@ -93,56 +154,8 @@ public class LobbyScene : MonoBehaviour
             }
             RoomInfoPanel.Find("RoomInfo").GetComponent<Text>().text = a;
 
-            RoomInfoPanel.Find("StartButton").gameObject.SetActive(PhotonNetwork.playerList.Length > 1 && PhotonNetwork.isMasterClient);
-
+            RoomInfoPanel.Find("StartButton").gameObject.SetActive(PhotonNetwork.PlayerList.Length > 1 && PhotonNetwork.IsMasterClient);
         }
-        else
-        {
-            RoomsListPanel.gameObject.SetActive(true);
-            RoomInfoPanel.gameObject.SetActive(false);
-            if (PhotonNetwork.GetRoomList().Length == 0)
-            {
-                roomsIndicator.text = "Currently no games are available.";
-
-                for (int i = 0; i < RoomsList.childCount; i++)
-                {
-                    RoomsList.GetChild(i).gameObject.SetActive(false);
-                    RoomsList.GetChild(i).SetParent(RoomCellPool);
-
-                }
-            }
-            else
-            {
-
-                roomsIndicator.text = PhotonNetwork.GetRoomList().Length + " rooms available:";
-
-                int roomcount = PhotonNetwork.GetRoomList().Length;
-                while (roomcount > RoomsList.childCount)
-                {
-                    RoomCellPool.GetChild(0).gameObject.SetActive(true);
-                    RoomCellPool.GetChild(0).SetParent(RoomsList);
-                }
-                while (roomcount < RoomsList.childCount)
-                {
-                    RoomsList.GetChild(0).gameObject.SetActive(false);
-                    RoomsList.GetChild(0).SetParent(RoomCellPool);
-                }
-                //// Room listing: simply call GetRoomList: no need to fetch/poll whatever!
-
-                for (int i = 0; i < PhotonNetwork.GetRoomList().Length; i++)
-                {
-                    RoomInfo roomInfo = PhotonNetwork.GetRoomList()[i];
-                    RoomsList.GetChild(i).GetComponent<RoomCellInfo>().RoomName.text = roomInfo.Name + " " + roomInfo.PlayerCount + "/" + roomInfo.MaxPlayers;
-
-                    RoomsList.GetChild(i).GetComponent<RoomCellInfo>().JoinButton.onClick.RemoveAllListeners();
-                    RoomsList.GetChild(i).GetComponent<RoomCellInfo>().JoinButton.onClick.AddListener(() => PhotonNetwork.JoinRoom(roomInfo.Name));
-                }
-
-
-
-            }
-        }
-
     }
 
     public void OnClickRoomCreatedButton()
@@ -158,66 +171,55 @@ public class LobbyScene : MonoBehaviour
         PhotonNetwork.LoadLevel("_Complete-Game");
     }
 
-
-
-
     // We have two options here: we either joined(by title, list or random) or created a room.
-    public void OnMasterClientSwitched(PhotonPlayer newMasterClient)
+    public override void OnMasterClientSwitched(Player newMasterClient)
     {
         //RoomInfoPanel.Find("StartButton").gameObject.SetActive(PhotonNetwork.isMasterClient);
     }
-    public void OnJoinedRoom()
+    public override void OnJoinedRoom()
     {
         RoomsListPanel.gameObject.SetActive(false);
         RoomInfoPanel.gameObject.SetActive(true);
 
         //RoomInfoPanel.Find("StartButton").gameObject.SetActive(PhotonNetwork.isMasterClient);
 
-
-
         Debug.Log("OnJoinedRoom");
     }
-    public void OnLeftRoom()
+    public override void OnLeftRoom()
     {
         RoomsListPanel.gameObject.SetActive(true);
         RoomInfoPanel.gameObject.SetActive(false);
     }
-    public void OnPhotonCreateRoomFailed()
+
+    public override void OnCreateRoomFailed(short returnCode, string message)
     {
         ErrorDialog = "Error: Can't create room (room name maybe already used).";
-        Debug.Log("OnPhotonCreateRoomFailed got called. This can happen if the room exists (even if not visible). Try another room name.");
+        Debug.Log("OnCreateRoomFailed got called. This can happen if the room exists (even if not visible). Try another room name. Code: " + returnCode + " Message: " + message);
     }
 
-    public void OnPhotonJoinRoomFailed(object[] cause)
+    public override void OnJoinRoomFailed(short returnCode, string message)
     {
-        ErrorDialog = "Error: Can't join room (full or unknown room name). " + cause[1];
-        Debug.Log("OnPhotonJoinRoomFailed got called. This can happen if the room is not existing or full or closed.");
+        ErrorDialog = "Error: Can't join room (full or unknown room name). Code: " + returnCode;
+        Debug.Log("OnJoinRoomFailed got called. This can happen if the room is not existing or full or closed. Code: " + returnCode + " Message: " + message);
     }
 
-    public void OnPhotonRandomJoinFailed()
+    public override void OnJoinRandomFailed(short returnCode, string message)
     {
         ErrorDialog = "Error: Can't join random room (none found).";
-        Debug.Log("OnPhotonRandomJoinFailed got called. Happens if no room is available (or all full or invisible or closed). JoinrRandom filter-options can limit available rooms.");
+        Debug.Log("OnJoinRandomFailed got called. Happens if no room is available (or all full or invisible or closed). JoinrRandom filter-options can limit available rooms. Code: " + returnCode + " Message: " + message);
     }
 
-    public void OnCreatedRoom()
+    public override void OnCreatedRoom()
     {
         Debug.Log("OnCreatedRoom");
-        // PhotonNetwork.LoadLevel(SceneNameGame);
     }
 
-    public void OnDisconnectedFromPhoton()
+    public override void OnDisconnected(DisconnectCause cause)
     {
-        Debug.Log("Disconnected from Photon.");
+        Debug.Log("Disconnected from Photon. Cause: " + cause);
     }
 
-    public void OnFailedToConnectToPhoton(object parameters)
-    {
-        this.connectFailed = true;
-        Debug.Log("OnFailedToConnectToPhoton. StatusCode: " + parameters + " ServerAddress: " + PhotonNetwork.ServerAddress);
-    }
-
-    public void OnConnectedToMaster()
+    public override void OnConnectedToMaster()
     {
         Debug.Log("As OnConnectedToMaster() got called, the PhotonServerSetting.AutoJoinLobby must be off. Joining lobby by calling PhotonNetwork.JoinLobby().");
         PhotonNetwork.JoinLobby();

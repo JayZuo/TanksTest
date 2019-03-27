@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Photon.Pun;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -24,7 +25,7 @@ public class PlayerUI : MonoBehaviour
     void Start()
     {
         UI = Instantiate(this.PlayerUiPrefab);
-        UI.GetComponent<Text>().text = thisTank.GetComponent<PhotonView>().owner.NickName;
+        UI.GetComponent<Text>().text = thisTank.GetComponent<PhotonView>().Owner.NickName;
         UI.transform.SetParent(GameObject.Find("MessageCanvas").GetComponent<Transform>());
     }
 

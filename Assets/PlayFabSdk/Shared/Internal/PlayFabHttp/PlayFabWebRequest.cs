@@ -13,7 +13,7 @@ using PlayFab.Json;
 
 namespace PlayFab.Internal
 {
-    public class PlayFabWebRequest : IPlayFabHttp
+    public class PlayFabWebRequest : IPlayFabTransportPlugin
     {
         /// <summary>
         /// Disable encryption certificate validation within PlayFabWebRequest using this request.
@@ -65,16 +65,19 @@ namespace PlayFab.Internal
 
         private static string _unityVersion;
 
-        private static bool _sessionStarted;
-        public bool SessionStarted { get { return _sessionStarted; } set { _sessionStarted = value; } }
+        private bool _isInitialized = false;
+
         public string AuthKey { get; set; }
         public string EntityToken { get; set; }
 
-        public void InitializeHttp()
+        public bool IsInitialized { get { return _isInitialized; } }
+
+        public void Initialize()
         {
             SetupCertificates();
             _isApplicationPlaying = true;
             _unityVersion = Application.unityVersion;
+            _isInitialized = true;
         }
 
         public void OnDestroy()
@@ -122,12 +125,20 @@ namespace PlayFab.Internal
             newThread.Start();
         }
 
-        public void SimplePutCall(string fullUrl, byte[] payload, Action successCallback, Action<string> errorCallback)
+        public void SimplePutCall(string fullUrl, byte[] payload, Action<byte[]> successCallback, Action<string> errorCallback)
         {
             // This needs to be improved to use a decent thread-pool, but it can be improved invisibly later
-            var newThread = new Thread(() => SimpleHttpsWorker("PUT", fullUrl, payload, (result) => { successCallback(); }, errorCallback));
+            var newThread = new Thread(() => SimpleHttpsWorker("PUT", fullUrl, payload, successCallback, errorCallback));
             newThread.Start();
         }
+
+        public void SimplePostCall(string fullUrl, byte[] payload, Action<byte[]> successCallback, Action<string> errorCallback)
+        {
+            // This needs to be improved to use a decent thread-pool, but it can be improved invisibly later
+            var newThread = new Thread(() => SimpleHttpsWorker("POST", fullUrl, payload, successCallback, errorCallback));
+            newThread.Start();
+        }
+
 
         private void SimpleHttpsWorker(string httpMethod, string fullUrl, byte[] payload, Action<byte[]> successCallback, Action<string> errorCallback)
         {
@@ -185,8 +196,9 @@ namespace PlayFab.Internal
             }
         }
 
-        public void MakeApiCall(CallRequestContainer reqContainer)
+        public void MakeApiCall(object reqContainerObj)
         {
+            CallRequestContainer reqContainer = (CallRequestContainer)reqContainerObj;
             reqContainer.HttpState = HttpRequestState.Idle;
 
             lock (ActiveRequests)
@@ -392,7 +404,8 @@ namespace PlayFab.Internal
         {
             try
             {
-                var httpResult = JsonWrapper.DeserializeObject<HttpResponseObject>(reqContainer.JsonResponse);
+                var serializer = PluginManager.GetPlugin<ISerializerPlugin>(PluginContract.PlayFab_Serializer);
+                var httpResult = serializer.DeserializeObject<HttpResponseObject>(reqContainer.JsonResponse);
 
 #if PLAYFAB_REQUEST_TIMING
                 reqContainer.Timing.WorkerRequestMs = (int)reqContainer.Stopwatch.ElapsedMilliseconds;
@@ -405,7 +418,7 @@ namespace PlayFab.Internal
                     return;
                 }
 
-                reqContainer.JsonResponse = JsonWrapper.SerializeObject(httpResult.data);
+                reqContainer.JsonResponse = serializer.SerializeObject(httpResult.data);
                 reqContainer.DeserializeResultJson(); // Assigns Result with a properly typed object
                 reqContainer.ApiResult.Request = reqContainer.ApiRequest;
                 reqContainer.ApiResult.CustomData = reqContainer.CustomData;

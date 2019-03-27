@@ -1,3 +1,4 @@
+using Photon.Pun;
 using UnityEngine;
 
 namespace Complete
@@ -51,7 +52,7 @@ namespace Complete
 
                 var targetPhotonView = targetRigidbody.GetComponent<PhotonView>();
 
-                if (targetPhotonView != null && targetPhotonView.isMine)
+                if (targetPhotonView != null && targetPhotonView.IsMine)
                 {
                     // Deal this damage to the tank.
                     targetHealth.TakeDamage(damage);

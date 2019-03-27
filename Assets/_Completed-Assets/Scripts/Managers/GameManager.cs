@@ -1,6 +1,8 @@
-using ExitGames.UtilityScripts;
 using System.Collections;
 using System.Collections.Generic;
+using Photon.Pun;
+using Photon.Pun.UtilityScripts;
+using Photon.Realtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -8,7 +10,7 @@ using Hashtable = ExitGames.Client.Photon.Hashtable;
 
 namespace Complete
 {
-    public class GameManager : Photon.PunBehaviour
+    public class GameManager : MonoBehaviourPunCallbacks
     {
         public static GameManager Instance;
 
@@ -37,7 +39,7 @@ namespace Complete
 
         private void Start()
         {
-           
+
             // Create the delays so they only have to be made once.
             m_StartWait = new WaitForSeconds(m_StartDelay);
             m_EndWait = new WaitForSeconds(m_EndDelay);
@@ -50,8 +52,8 @@ namespace Complete
         // create one Tank, set its player number and references needed for control.
         private void SpawnTank()
         {
-            int i = PhotonNetwork.player.GetRoomIndex();
-          
+            int i = PhotonNetwork.LocalPlayer.GetPlayerNumber();
+
             //var color = m_Tanks[i].m_PlayerColor;
 
             //Hashtable playerColor = new Hashtable();
@@ -96,7 +98,7 @@ namespace Complete
                 m_Tanks.Remove(toRemove);
         }
 
-        public override void OnPhotonPlayerConnected(PhotonPlayer other)
+        public override void OnPlayerEnteredRoom(Player other)
         {
             Debug.Log("OnPhotonPlayerConnected() " + other.NickName); // not seen if you're the player connecting
         }
@@ -105,7 +107,7 @@ namespace Complete
         //This is called from start and will run each phase of the game one after another.
         private IEnumerator GameLoop()
         {
-            while (m_Tanks.Count < 2 || m_Tanks.Count != PhotonNetwork.room.PlayerCount)
+            while (m_Tanks.Count < 2 || m_Tanks.Count != PhotonNetwork.CurrentRoom.PlayerCount)
                 yield return null;
 
             ////wait to be sure that all are ready to start

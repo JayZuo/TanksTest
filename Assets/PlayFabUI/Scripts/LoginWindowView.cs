@@ -1,11 +1,12 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.UI;
+﻿using Photon.Pun;
+using Photon.Realtime;
+
 using PlayFab;
 using PlayFab.ClientModels;
+
+using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 #if FACEBOOK
 using Facebook.Unity;
@@ -17,7 +18,7 @@ using GooglePlayGames.BasicApi;
 #endif
 
 
-public class LoginWindowView : Photon.PunBehaviour
+public class LoginWindowView : MonoBehaviourPunCallbacks
 {
     //Debug Flag to simulate a reset
     public bool ClearPlayerPrefs;
@@ -51,11 +52,6 @@ public class LoginWindowView : Photon.PunBehaviour
     private string _playFabPlayerIdCache;
 
     bool isConnecting;
-
-    /// <summary>
-    /// This client's version number. Users are separated from each other by gameversion (which allows you to make breaking changes).
-    /// </summary>
-    string _gameVersion = "v1.0";
 
     public void Awake()
     {
@@ -93,12 +89,8 @@ public class LoginWindowView : Photon.PunBehaviour
         });
 
         // #Critical
-        // we don't join the lobby. There is no need to join a lobby to get the list of rooms.
-        PhotonNetwork.autoJoinLobby = false;
-
-        // #Critical
         // this makes sure we can use PhotonNetwork.LoadLevel() on the master client and all clients in the same room sync their level automatically
-        PhotonNetwork.automaticallySyncScene = true;
+        PhotonNetwork.AutomaticallySyncScene = true;
     }
 
     public void Start()
@@ -134,7 +126,7 @@ public class LoginWindowView : Photon.PunBehaviour
     /// Login Successfully - Goes to next screen.
     /// </summary>
     /// <param name="result"></param>
-    private void OnLoginSuccess(PlayFab.ClientModels.LoginResult result)
+    private void OnLoginSuccess(LoginResult result)
     {
         Debug.LogFormat("Logged In as: {0}", result.PlayFabId);
 
@@ -147,11 +139,11 @@ public class LoginWindowView : Photon.PunBehaviour
         //We can player PlayFabId. This will come in handy during next step
         _playFabPlayerIdCache = result.PlayFabId;
 
-        PhotonNetwork.playerName = Username.text;
+        PhotonNetwork.NickName = Username.text;
 
         PlayFabClientAPI.GetPhotonAuthenticationToken(new GetPhotonAuthenticationTokenRequest()
         {
-            PhotonApplicationId = PhotonNetwork.PhotonServerSettings.AppID
+            PhotonApplicationId = PhotonNetwork.PhotonServerSettings.AppSettings.AppIdRealtime
         }, AuthenticateWithPhoton, OnPlayFabError);
     }
 
@@ -192,7 +184,7 @@ public class LoginWindowView : Photon.PunBehaviour
     //        PhotonNetwork.ConnectUsingSettings(_gameVersion);
     //    }
     //}
-    
+
     /// <summary>
     /// Error handling for when Login returns errors.
     /// </summary>
