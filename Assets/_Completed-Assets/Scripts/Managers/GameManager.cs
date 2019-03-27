@@ -53,7 +53,7 @@ namespace Complete
         private void SpawnTank()
         {
             int i = PhotonNetwork.LocalPlayer.GetPlayerNumber();
-
+            Debug.Log("SpawnTank for " + i);
             //var color = m_Tanks[i].m_PlayerColor;
 
             //Hashtable playerColor = new Hashtable();

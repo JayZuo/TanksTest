@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Photon.Pun;
+using Photon.Pun.UtilityScripts;
 using Photon.Realtime;
 using UnityEngine;
 using UnityEngine.UI;
@@ -63,8 +64,29 @@ public class LobbyScene : MonoBehaviourPunCallbacks
         }
 
         //RoomInfoPanel.Find("StartButton").gameObject.SetActive(false);
+    }
 
+    public override void OnEnable()
+    {
+        base.OnEnable();
 
+        PlayerNumbering.OnPlayerNumberingChanged += PlayerNumbering_OnPlayerNumberingChanged;
+    }
+
+    public override void OnDisable()
+    {
+        base.OnDisable();
+        PlayerNumbering.OnPlayerNumberingChanged -= PlayerNumbering_OnPlayerNumberingChanged;
+    }
+
+    private void PlayerNumbering_OnPlayerNumberingChanged()
+    {
+        Debug.Log("PlayerNumberingChanged");
+        foreach (Player p in PhotonNetwork.PlayerList)
+        {
+            Debug.Log(p.NickName + " is number " + p.GetPlayerNumber());
+        }
+        Debug.Log("------  PlayerNumberingChanged  ------");
     }
 
     public override void OnRoomListUpdate(List<RoomInfo> roomList)
