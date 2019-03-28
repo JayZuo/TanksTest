@@ -5,7 +5,7 @@ using Photon.Pun;
 using Photon.Pun.UtilityScripts;
 using UnityEngine;
 
-public class TankSetup : MonoBehaviourPunCallbacks
+public class TankSetup : MonoBehaviour, IPunInstantiateMagicCallback
 {
     public static Color[] Colors = new Color[] { Color.red, Color.blue, Color.yellow, Color.green };
 
